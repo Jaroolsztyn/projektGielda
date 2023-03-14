@@ -1,0 +1,61 @@
+version: '3'
+services:
+    postgres:
+        build: ./.docker/postgres
+        container_name: postgres
+        restart: always
+        volumes:
+            - ./.docker/postgres:/var/lib/postgresql
+#            - postgres-data:/var/lib/postgresql/data
+#            - /home/epicode/offerdb:/backup
+        ports:
+            - 5432:5432
+        environment:
+            POSTGRES_DB: ${POSTGRES_DB}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        env_file:
+            - .env
+        networks:
+            - postgres-compose-network
+
+    pgadmin:
+        image: dpage/pgadmin4
+        container_name: pgadmin
+        volumes:
+            - ./。docker/pgadmin:/var/lib/pgadmin
+        environment:
+            PGADMIN_DEFAULT_EMAIL: "michal.halas@epicode.net"
+            PGADMIN_DEFAULT_PASSWORD: "PgAdmin2019!"
+        ports:
+            - "16543:80"
+        depends_on:
+            - postgres
+        networks:
+            - postgres-compose-network
+
+    java:
+        build: ./.docker/java
+        container_name: java
+        volumes:
+            - .:/usr/src/myapp
+        working_dir: '/usr/src/myapp'
+        links:
+            - postgres
+        depends_on:
+            - postgres
+        env_file:
+            - .env
+        command: 'tail -f /dev/null'
+        tty: true
+        networks:
+            - postgres-compose-network
+
+# docker volume create postgres-data
+volumes:
+    postgres-data:
+        external: true
+
+networks:
+  postgres-compose-network:
+    driver: bridge
